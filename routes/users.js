@@ -31,7 +31,7 @@ router.post("/", async (req, res) => {
     passwordHash: bcrypt.hashSync(req.body.password, 10),
     phone: req.body.phone,
     isAdmin: req.body.isAdmin,
-    //  street: req.body.street,
+    walletBalance: req.body.walletBalance,
     //  apartment: req.body.apartment,
     //  zip: req.body.zip,
     //  city: req.body.city,
@@ -61,7 +61,7 @@ router.put("/:id", async (req, res) => {
       passwordHash: newPassword,
       phone: req.body.phone,
       isAdmin: req.body.isAdmin,
-      //  street: req.body.street,
+      walletBalance: req.body.walletBalance,
       // apartment: req.body.apartment,
       //  zip: req.body.zip,
       //  city: req.body.city,
@@ -106,12 +106,13 @@ router.post("/register", async (req, res) => {
     passwordHash: bcrypt.hashSync(req.body.password, 10),
     phone: req.body.phone,
     isAdmin: req.body.isAdmin,
-    //  street: req.body.street,
+    walletBalance: req.body.walletBalance,
     // apartment: req.body.apartment,
     // zip: req.body.zip,
     //  city: req.body.city,
     country: req.body.country,
   });
+
   user = await user.save();
 
   if (!user) return res.status(400).send("the user cannot be created!");

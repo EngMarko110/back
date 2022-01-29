@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
+    // unique: [true, "Email Already Rigesterd"],
   },
   passwordHash: {
     type: String,
@@ -21,11 +22,11 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  /*  street: {
-        type: String,
-        default: ''
-    },
-    apartment: {
+  walletBalance: {
+    type: Number,
+    default: "0",
+  },
+  /*  apartment: {
         type: String,
         default: ''
     },
@@ -42,6 +43,13 @@ const userSchema = new mongoose.Schema({
     default: "",
   },
 });
+/**
+ * Validates unique email
+ userSchema.path("email").validate(async (email) => {
+   const emailCount = await mongoose.models.User.countDocuments({ email });
+   return !emailCount;
+  }, "Email already exists");
+  */
 
 userSchema.virtual("id").get(function () {
   return this._id.toHexString();
