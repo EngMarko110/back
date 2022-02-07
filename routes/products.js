@@ -1,6 +1,6 @@
 const { Product } = require("../models/product");
 const express = require("express");
-const { Category } = require("../models/category");
+const { Category, SubCategory } = require("../models/category");
 const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer");
@@ -36,7 +36,7 @@ router.get(`/`, async (req, res) => {
     filter = { category: req.query.categories.split(",") };
   }
 
-  const productList = await Product.find(filter).populate("category");
+  const productList = await Product.find(filter).populate("category").populate("subCategory");
 
   if (!productList) {
     res.status(500).json({ success: false });
@@ -45,7 +45,7 @@ router.get(`/`, async (req, res) => {
 });
 
 router.get(`/:id`, async (req, res) => {
-  const product = await Product.findById(req.params.id).populate("category");
+  const product = await Product.findById(req.params.id).populate("category").populate("subCategory");
 
   if (!product) {
     res.status(500).json({ success: false });
@@ -70,6 +70,7 @@ router.post(`/`, uploadOptions.single("image"), async (req, res) => {
     brand: req.body.brand,
     price: req.body.price,
     category: req.body.category,
+    subCategory: req.body.subCategory,
     countInStock: req.body.countInStock,
     //  rating: req.body.rating,
     //  numReviews: req.body.numReviews,
@@ -89,7 +90,8 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
   }
   const category = await Category.findById(req.body.category);
   if (!category) return res.status(400).send("Invalid Category");
-
+  const subCategory = await SubCategory.findById(req.body.subCategory);
+  if (!subCategory) return res.status(400).send("Invalid Sub Category");
   const product = await Product.findById(req.params.id);
   if (!product) return res.status(400).send("Invalid Product!");
 
@@ -114,17 +116,17 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
       brand: req.body.brand,
       price: req.body.price,
       category: req.body.category,
+      subCategory: req.body.subCategory,
       countInStock: req.body.countInStock,
       //  rating: req.body.rating,
       //  numReviews: req.body.numReviews,
       isFeatured: req.body.isFeatured,
     },
-    { new: true }
+    { new: true, omitUndefined: true }
   );
 
   if (!updatedProduct)
     return res.status(500).send("the product cannot be updated!");
-
   res.send(updatedProduct);
 });
 
@@ -198,5 +200,24 @@ router.put(
     res.send(product);
   }
 );
+
+router.delete("/category/:id", (req, res) => {
+  Product.deleteMany({ $or: [{ category: req.params.id }, { subCategory: req.params.id }] })
+    .then((product) => {
+      if (product) {
+        return res.status(200).json({
+          success: true,
+          message: "the product is deleted!",
+        });
+      } else {
+        return res
+          .status(404)
+          .json({ success: false, message: "product not found!" });
+      }
+    })
+    .catch((err) => {
+      return res.status(500).json({ success: false, error: err });
+    });
+});
 
 module.exports = router;
