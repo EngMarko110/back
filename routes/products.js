@@ -122,7 +122,7 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
       //  numReviews: req.body.numReviews,
       isFeatured: req.body.isFeatured,
     },
-    { new: true, omitUndefined: true }
+    { new: true }
   );
 
   if (!updatedProduct)

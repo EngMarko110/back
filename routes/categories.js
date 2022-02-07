@@ -45,7 +45,7 @@ router.put('/:id',async (req, res)=> {
             icon: req.body.icon,
             color: req.body.color,
         },
-        { new: true, omitUndefined: true }
+        { new: true }
     )
 
     if(!category)
@@ -93,7 +93,7 @@ router.put('/subCategories/edit/:id',async (req, res)=> {
             icon: req.body.icon,
             color: req.body.color,
         },
-        { new: true, omitUndefined: true }
+        { new: true }
     )
 
     if(!subCategory)
