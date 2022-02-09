@@ -13,22 +13,9 @@ const categorySchema = mongoose.Schema({
     }
 })
 const subCategorySchema = mongoose.Schema({
-    parentCategory: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Category",
-        required: true,
-    },
-    name: {
-        type: String,
-        required: true,
-    },
-    icon: {
-        type: String,
-    },
-    color: { 
-        type: String,
-    }
-})
+    parentCategory: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
+    name: { type: String, required: true },
+});
 
 categorySchema.virtual('id').get(function () {
     return this._id.toHexString();
