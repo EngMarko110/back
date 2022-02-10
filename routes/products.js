@@ -4,7 +4,8 @@ const { Category, SubCategory } = require("../models/category");
 const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer");
-
+const parseUrlencoded = express.urlencoded({ extended: true });
+const addProductMiddleware = require("../utils/middlewares/addProductMiddleware");
 const FILE_TYPE_MAP = {
   "image/png": "png",
   "image/jpeg": "jpeg",
@@ -53,13 +54,8 @@ router.get(`/:id`, async (req, res) => {
   res.send(product);
 });
 
-router.post(`/`, uploadOptions.single("image"), async (req, res) => {
-  const category = await Category.findById(req.body.category);
-  if (!category) return res.status(400).send("Invalid Category");
-
+router.post(`/`, [parseUrlencoded, uploadOptions.single("image"), addProductMiddleware], async (req, res) => {
   const file = req.file;
-  if (!file) return res.status(400).send("No image in the request");
-
   const fileName = file.filename;
   const basePath = `${req.protocol}://${req.get("host")}/public/uploads/`;
   let product = new Product({

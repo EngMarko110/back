@@ -1,7 +1,9 @@
 const {Category, SubCategory} = require('../models/category');
 const express = require('express');
+const parseUrlencoded = express.urlencoded({ extended: true });
+const addCategoryMiddleware = require('../utils/middlewares/addCategoryMiddleware');
+const addSubCategoryMiddleware = require('../utils/middlewares/addSubCategoryMiddleware');
 const router = express.Router();
-
 router.get(`/`, async (req, res) =>{
     const categoryList = await Category.find();
 
@@ -22,7 +24,7 @@ router.get('/:id', async(req,res)=>{
 
 
 
-router.post('/', async (req,res)=>{
+router.post('/', [parseUrlencoded, addCategoryMiddleware], async (req,res)=>{
     let category = new Category({
         name: req.body.name,
         icon: req.body.icon,
@@ -75,7 +77,7 @@ router.get("/subCategories/:id", async (req, res) => {
     if (!subCategories) return res.status(500).json({ message: "Sub category is not found" });
     return res.status(200).send(subCategories);
 });
-router.post("/subCategories/new", async (req,res) => {
+router.post("/subCategories/new", [parseUrlencoded, addSubCategoryMiddleware], async (req,res) => {
     let subCategory = new SubCategory({ parentCategory: req.body.parentCategory, name: req.body.name });
     subCategory = await subCategory.save();
     if (!subCategory) return res.status(400).send("the subCategory cannot be created!")
