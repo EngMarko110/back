@@ -67,7 +67,7 @@ router.put("/:id", async (req, res) => {
       //  city: req.body.city,
       country: req.body.country,
     },
-    { new: true, omitUndefined: true }
+    { new: true }
   );
 
   if (!user) return res.status(400).send("the user cannot be created!");
