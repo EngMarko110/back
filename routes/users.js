@@ -100,6 +100,10 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
+  if (await User.findOne({ email: req.body.email })) {
+    return res.status(400).send('email "' + req.body.email + '" is already taken');
+    // throw 'email "' + req.body.email + '" is already taken';
+  }
   let user = new User({
     name: req.body.name,
     email: req.body.email,
@@ -113,9 +117,12 @@ router.post("/register", async (req, res) => {
     country: req.body.country,
   });
 
+  console.log({ user});
+
+  // await user.save();
   user = await user.save();
 
-  if (!user) return res.status(400).send("the user cannot be created!");
+  // if (!user) return res.status(400).send("the user cannot be created!");
 
   res.send(user);
 });
