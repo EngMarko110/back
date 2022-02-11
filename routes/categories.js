@@ -87,16 +87,16 @@ router.get("/subCategories/:id", async (req, res) => {
   return res.status(200).send(subCategories);
 });
 
-//
+////////////////
 
 router.get("/subCategories/:id/product", async (req, res) => {
-  const product = await product.findById(req.params.id);
-  if (!product)
+  const products = await Product.find({ subCategory: req.params.id });
+  if (!products)
     return res.status(500).json({ message: "product is not found" });
-  return res.status(200).send(product);
+  return res.status(200).send(products);
 });
 
-//
+///////////////
 
 router.post(
   "/subCategories/new",
