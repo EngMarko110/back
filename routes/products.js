@@ -37,7 +37,9 @@ router.get(`/`, async (req, res) => {
     filter = { category: req.query.categories.split(",") };
   }
 
-  const productList = await Product.find(filter).populate("category").populate("subCategory");
+  const productList = await Product.find(filter)
+    .populate("category")
+    .populate("subCategory");
 
   if (!productList) {
     res.status(500).json({ success: false });
@@ -46,7 +48,9 @@ router.get(`/`, async (req, res) => {
 });
 
 router.get(`/:id`, async (req, res) => {
-  const product = await Product.findById(req.params.id).populate("category").populate("subCategory");
+  const product = await Product.findById(req.params.id)
+    .populate("category")
+    .populate("subCategory");
 
   if (!product) {
     res.status(500).json({ success: false });
@@ -54,31 +58,35 @@ router.get(`/:id`, async (req, res) => {
   res.send(product);
 });
 
-router.post(`/`, [parseUrlencoded, uploadOptions.single("image"), addProductMiddleware], async (req, res) => {
-  const file = req.file;
-  const fileName = file.filename;
-  const basePath = `${req.protocol}://${req.get("host")}/public/uploads/`;
-  let product = new Product({
-    name: req.body.name,
-    description: req.body.description,
-    richDescription: req.body.richDescription,
-    image: `${basePath}${fileName}`, // "http://localhost:3000/public/upload/image-2323232"
-    brand: req.body.brand,
-    price: req.body.price,
-    category: req.body.category,
-    subCategory: req.body.subCategory,
-    countInStock: req.body.countInStock,
-    //  rating: req.body.rating,
-    //  numReviews: req.body.numReviews,
-    isFeatured: req.body.isFeatured,
-  });
+router.post(
+  `/`,
+  [parseUrlencoded, uploadOptions.single("image"), addProductMiddleware],
+  async (req, res) => {
+    const file = req.file;
+    const fileName = file.filename;
+    const basePath = `${req.protocol}://${req.get("host")}/public/uploads/`;
+    let product = new Product({
+      name: req.body.name,
+      description: req.body.description,
+      richDescription: req.body.richDescription,
+      image: `${basePath}${fileName}`, // "http://localhost:3000/public/upload/image-2323232"
+      brand: req.body.brand,
+      price: req.body.price,
+      category: req.body.category,
+      subCategory: req.body.subCategory,
+      countInStock: req.body.countInStock,
+      //  rating: req.body.rating,
+      //  numReviews: req.body.numReviews,
+      isFeatured: req.body.isFeatured,
+    });
 
-  product = await product.save();
+    product = await product.save();
 
-  if (!product) return res.status(500).send("The product cannot be created");
+    if (!product) return res.status(500).send("The product cannot be created");
 
-  res.send(product);
-});
+    res.send(product);
+  }
+);
 
 router.put("/:id", uploadOptions.single("image"), async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
@@ -198,7 +206,9 @@ router.put(
 );
 
 router.delete("/category/:id", (req, res) => {
-  Product.deleteMany({ $or: [{ category: req.params.id }, { subCategory: req.params.id }] })
+  Product.deleteMany({
+    $or: [{ category: req.params.id }, { subCategory: req.params.id }],
+  })
     .then((product) => {
       if (product) {
         return res.status(200).json({
@@ -215,5 +225,16 @@ router.delete("/category/:id", (req, res) => {
       return res.status(500).json({ success: false, error: err });
     });
 });
+
+////////////////
+
+router.get("/subCategories/:id/product", async (req, res) => {
+  const products = await Product.find({ subCategory: req.params.id });
+  if (!products)
+    return res.status(500).json({ message: "product is not found" });
+  return res.status(200).send(products);
+});
+
+///////////////
 
 module.exports = router;
