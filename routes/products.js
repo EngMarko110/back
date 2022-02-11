@@ -122,7 +122,7 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
       //  numReviews: req.body.numReviews,
       isFeatured: req.body.isFeatured,
     },
-    { new: true }
+    { new: true, omitUndefined: true }
   );
 
   if (!updatedProduct)
@@ -192,7 +192,7 @@ router.put(
       {
         images: imagesPaths,
       },
-      { new: true }
+      { new: true, omitUndefined: true }
     );
 
     if (!product) return res.status(500).send("the gallery cannot be updated!");
