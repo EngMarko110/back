@@ -95,11 +95,12 @@ router.post(
       parentCategory: req.body.parentCategory,
       name: req.body.name,
       icon: req.body.icon,
+      subicon: req.body.subicon, //subIcon
       color: req.body.color,
     });
     subCategory = await subCategory.save();
     if (!subCategory)
-      return res.status(400).send("the subCategory cannot be created!");
+      return res.status(400).send("the subCategory cannot be created");
     res.send(subCategory);
   }
 );
@@ -110,6 +111,7 @@ router.put("/subCategories/edit/:id", async (req, res) => {
       parentCategory: req.body.parentCategory,
       name: req.body.name,
       icon: req.body.icon,
+      subicon: req.body.subicon, //subIcon
       color: req.body.color,
     },
     { new: true }

@@ -23,6 +23,10 @@ const subCategorySchema = mongoose.Schema({
   icon: {
     type: String,
   },
+  subicon: {
+    ////SubIcon
+    type: String,
+  },
   color: {
     type: String,
   },
