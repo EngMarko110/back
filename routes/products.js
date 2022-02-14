@@ -1,6 +1,7 @@
 const { Product } = require("../models/product");
 const express = require("express");
-const { Category, SubCategory } = require("../models/category");
+const { Category } = require("../models/categories/category");
+const { SubCategory } = require("../models/categories/subCategory");
 const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer");
@@ -35,9 +36,10 @@ router.get(`/`, async (req, res) => {
   let filter = {};
   if (req.query.categories) {
     filter = { category: req.query.categories.split(",") };
-  }
+  } else if (req.query.subCategories) filter = { subCategory: req.query.categories.split(",") };
 
   const productList = await Product.find(filter)
+    .populate("mainCategory")
     .populate("category")
     .populate("subCategory");
 
@@ -49,6 +51,7 @@ router.get(`/`, async (req, res) => {
 
 router.get(`/:id`, async (req, res) => {
   const product = await Product.findById(req.params.id)
+    .populate("mainCategory")
     .populate("category")
     .populate("subCategory");
 
@@ -72,6 +75,7 @@ router.post(
       image: `${basePath}${fileName}`, // "http://localhost:3000/public/upload/image-2323232"
       brand: req.body.brand,
       price: req.body.price,
+      mainCategory: req.body.mainCategory,
       category: req.body.category,
       subCategory: req.body.subCategory,
       countInStock: req.body.countInStock,
@@ -119,6 +123,7 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
       image: imagepath,
       brand: req.body.brand,
       price: req.body.price,
+      mainCategory: req.body.mainCategory,
       category: req.body.category,
       subCategory: req.body.subCategory,
       countInStock: req.body.countInStock,

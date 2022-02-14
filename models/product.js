@@ -28,6 +28,11 @@ const productSchema = mongoose.Schema({
     type: Number,
     default: 0,
   },
+  mainCategory: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "MainCategory",
+    required: true,
+  },
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",
