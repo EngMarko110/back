@@ -1,4 +1,4 @@
-const { Category } = require("../../models/category");
+const { Category } = require("../../models/categories/category");
 async function addCategoryMiddleware(req, res, next) {
     try {
         const categories = await Category.find().where({ name: req.body.name });

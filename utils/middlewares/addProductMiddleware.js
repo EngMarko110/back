@@ -1,5 +1,6 @@
 const { Product } = require("../../models/product");
-const { Category, SubCategory } = require("../../models/category");
+const { Category } = require("../../models/categories/category");
+const { SubCategory } = require("../../models/categories/subCategory");
 async function addProductMiddleware(req, res, next) {
     try {
         const category = await Category.findById(req.body.category);
@@ -11,7 +12,6 @@ async function addProductMiddleware(req, res, next) {
         if (!products.length) next();
         else return res.status(409).json({ message: "Product is already exists with this name!" });
     } catch (error) {
-        console.log(error)
         return res.status(400).json({ message: "Bad Request!" });
     }
 }
