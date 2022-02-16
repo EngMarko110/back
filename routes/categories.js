@@ -54,14 +54,13 @@ router.delete("/mainCategories/:id", (req, res) => {
             if (subCategory) {
               Product.deleteMany({ mainCategory: req.params.id }).then((product) => {
                 if (product) return res.status(200).json({ success: true, message: "the main category is deleted!" });
-                else return res.status(404).json({ success: false, message: "products not found!" });
               });
-            } else return res.status(404).json({ success: false, message: "subCategories not found!" });
+            }
           });
-        } else return res.status(404).json({ success: false, message: "categories not found!" });
+        }
       });
     } else {
-      return res.status(404).json({ success: false, message: "category not found!" });
+      return res.status(404).json({ success: false, message: "the main category is not found!" });
     }
   }).catch((err) => {
     return res.status(500).json({ success: false, error: err });
@@ -135,9 +134,8 @@ router.delete("/:id", (req, res) => {
           if (subCategory) {
             Product.deleteMany({ category: req.params.id }).then((product) => {
               if (product) return res.status(200).json({ success: true, message: "the category is deleted!" });
-              else return res.status(404).json({ success: false, message: "products not found!" });
             });
-          } else return res.status(404).json({ success: false, message: "subCategories not found!" });
+          }
         });
       } else {
         return res
@@ -151,7 +149,7 @@ router.delete("/:id", (req, res) => {
 });
 router.get("/:id/subCategories", async (req, res) => {
   const subCategories = await SubCategory.find({
-    parentCategory: req.params.id,
+    category: req.params.id,
   });
   if (!subCategories)
     return res.status(500).json({
@@ -207,7 +205,6 @@ router.delete("/subCategories/:id", (req, res) => {
       if (subCategory) {
         Product.deleteMany({ subCategory: req.params.id }).then((product) => {
           if (product) return res.status(200).json({ success: true, message: "the category is deleted!" });
-          else return res.status(404).json({ success: false, message: "products not found!" });
         });
       }
       else
