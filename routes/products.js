@@ -234,7 +234,7 @@ router.delete("/category/:id", (req, res) => {
 ////////////////
 
 router.get("/subCategories/:id/product", async (req, res) => {
-  const products = await Product.find({ subCategory: req.params.id });
+  const products = await Product.find({ subCategory: req.params.id }).populate("mainCategory").populate("category").populate("subCategory");
   if (!products)
     return res.status(500).json({ message: "product is not found" });
   return res.status(200).send(products);
