@@ -4,8 +4,8 @@ const { SubCategory } = require("../models/categories/subCategory");
 const { Product } = require("../models/product");
 const express = require("express");
 const parseUrlencoded = express.urlencoded({ extended: true });
-const addCategoryMiddleware = require("../utils/middlewares/addCategoryMiddleware");
-const addSubCategoryMiddleware = require("../utils/middlewares/addSubCategoryMiddleware");
+const addCategoryMiddleware = require("../utils/middlewares/categoryMiddlewares/addCategoryMiddleware");
+const addSubCategoryMiddleware = require("../utils/middlewares/categoryMiddlewares/addSubCategoryMiddleware");
 const router = express.Router();
 router.get(`/mainCategories`, async (req, res) => {
   try {

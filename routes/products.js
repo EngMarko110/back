@@ -2,11 +2,13 @@ const { Product } = require("../models/product");
 const express = require("express");
 const { Category } = require("../models/categories/category");
 const { SubCategory } = require("../models/categories/subCategory");
+const { Licence } = require("../models/licence");
 const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer");
 const parseUrlencoded = express.urlencoded({ extended: true });
-const addProductMiddleware = require("../utils/middlewares/addProductMiddleware");
+const addProductMiddleware = require("../utils/middlewares/productMiddlewares/addProductMiddleware");
+const { OrderStatus } = require("../models/enums/OrderStatus");
 const FILE_TYPE_MAP = {
   "image/png": "png",
   "image/jpeg": "jpeg",
@@ -32,7 +34,7 @@ const storage = multer.diskStorage({
 
 const uploadOptions = multer({ storage: storage });
 
-router.get(`/`, async (req, res) => {
+router.get(`/`, [parseUrlencoded], async (req, res) => {
   let filter = {};
   if (req.query.categories) {
     filter = { category: req.query.categories.split(",") };
@@ -49,11 +51,13 @@ router.get(`/`, async (req, res) => {
   res.send(productList);
 });
 
-router.get(`/:id`, async (req, res) => {
+router.get(`/:id`, [parseUrlencoded], async (req, res) => {
   const product = await Product.findById(req.params.id)
     .populate("mainCategory")
     .populate("category")
-    .populate("subCategory");
+    .populate("subCategory")
+    .select("-availableLicence")
+    .select("-soldLicence");
 
   if (!product) {
     res.status(500).json({ success: false });
@@ -92,7 +96,7 @@ router.post(
   }
 );
 
-router.put("/:id", uploadOptions.single("image"), async (req, res) => {
+router.put("/:id", [parseUrlencoded, uploadOptions.single("image")], async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(400).send("Invalid Product Id");
   }
@@ -100,9 +104,29 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
   if (!category) return res.status(400).send("Invalid Category");
   const subCategory = await SubCategory.findById(req.body.subCategory);
   if (!subCategory) return res.status(400).send("Invalid Sub Category");
-  const product = await Product.findById(req.params.id);
+  let product = await Product.findById(req.params.id);
   if (!product) return res.status(400).send("Invalid Product!");
-
+  let licences = await Licence.find().where({ productId: req.params.id });
+  const filteredLicencesWithProduct = licences.filter((licence) => product.availableLicence.includes(licence.id));
+  if (filteredLicencesWithProduct.length !== licences.length) return res.status(500).send("There is something wrong in product data!");
+  if (req.body.soldKeys && req.body.orderStatus === OrderStatus.COMPLETE) {
+    const existedSoldKeys = req.body.soldKeys.filter((key) => product.soldLicence.includes(key));
+    if (!existedSoldKeys.length) {
+      const invalidSoldKeys = req.body.soldKeys.filter((key) => !product.availableLicence.includes(key));
+      if (invalidSoldKeys.length) return res.status(400).json({ message: "Product isn't available to be sold" });
+      else {
+        const updatedLicences = await Licence.updateMany({ _id: { $in: req.body.soldKeys } }, { sold: true }, { new: true, omitUndefined: true });
+        if (!updatedLicences) return res.status(500).json({ message: "Licence can't be updated" });
+        req.body.soldKeys.forEach((soldKey) => {
+          if (product.availableLicence.includes(soldKey)) {
+            product.availableLicence[product.availableLicence.indexOf(soldKey)] = null;
+            product.soldLicence.push(soldKey);
+          }
+        });
+        product.availableLicence = product.availableLicence.filter((key) => key !== null);
+      }
+    }
+  }
   const file = req.file;
   let imagepath;
 
@@ -113,7 +137,6 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
   } else {
     imagepath = product.image;
   }
-
   const updatedProduct = await Product.findByIdAndUpdate(
     req.params.id,
     {
@@ -127,25 +150,24 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
       category: req.body.category,
       subCategory: req.body.subCategory,
       countInStock: req.body.countInStock,
-      //  rating: req.body.rating,
-      //  numReviews: req.body.numReviews,
+      availableLicence: product.availableLicence,
+      soldLicence: product.soldLicence,
+      licenceStock: product.availableLicence.length,
       isFeatured: req.body.isFeatured,
     },
     { new: true, omitUndefined: true }
   );
-
   if (!updatedProduct)
     return res.status(500).send("the product cannot be updated!");
   res.send(updatedProduct);
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", [parseUrlencoded], (req, res) => {
   Product.findByIdAndRemove(req.params.id)
     .then((product) => {
       if (product) {
-        return res.status(200).json({
-          success: true,
-          message: "the product is deleted!",
+        Licence.deleteMany({ productId: req.params.id }).then((licences) => {
+          if (licences) return res.status(200).json({ success: true, message: "the product is deleted!" });
         });
       } else {
         return res
@@ -158,7 +180,7 @@ router.delete("/:id", (req, res) => {
     });
 });
 
-router.get(`/get/count`, async (req, res) => {
+router.get(`/get/count`, [parseUrlencoded], async (req, res) => {
   const productCount = await Product.countDocuments();
 
   if (!productCount) {
@@ -169,7 +191,7 @@ router.get(`/get/count`, async (req, res) => {
   });
 });
 
-router.get(`/get/featured/:count`, async (req, res) => {
+router.get(`/get/featured/:count`, [parseUrlencoded], async (req, res) => {
   const count = req.params.count ? req.params.count : 0;
   const products = await Product.find({ isFeatured: true }).limit(+count);
 
@@ -182,6 +204,7 @@ router.get(`/get/featured/:count`, async (req, res) => {
 router.put(
   "/gallery-images/:id",
   uploadOptions.array("images", 10),
+  [parseUrlencoded],
   async (req, res) => {
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(400).send("Invalid Product Id");
@@ -210,15 +233,14 @@ router.put(
   }
 );
 
-router.delete("/category/:id", (req, res) => {
+router.delete("/category/:id", [parseUrlencoded], (req, res) => {
   Product.deleteMany({
     $or: [{ category: req.params.id }, { subCategory: req.params.id }],
   })
     .then((product) => {
       if (product) {
-        return res.status(200).json({
-          success: true,
-          message: "the product is deleted!",
+        Licence.deleteMany({ productId: req.params.id }).then((licences) => {
+          if (licences) return res.status(200).json({ success: true, message: "the product is deleted!" });
         });
       } else {
         return res
@@ -233,7 +255,7 @@ router.delete("/category/:id", (req, res) => {
 
 ////////////////
 
-router.get("/subCategories/:id/product", async (req, res) => {
+router.get("/subCategories/:id/product", [parseUrlencoded], async (req, res) => {
   const products = await Product.find({ subCategory: req.params.id }).populate("mainCategory").populate("category").populate("subCategory");
   if (!products)
     return res.status(500).json({ message: "product is not found" });

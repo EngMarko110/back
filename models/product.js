@@ -65,7 +65,21 @@ const productSchema = mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+  availableLicence: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Licence",
+    default: [],
+  }],
+  soldLicence: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Licence",
+    default: [],
+  }],
+  licenceStock: {
+    type: Number,
+    default: 0,
+  },
+}, { timestamps: true });
 
 productSchema.virtual("id").get(function () {
   return this._id.toHexString();

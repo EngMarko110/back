@@ -1,6 +1,6 @@
-const { Product } = require("../../models/product");
-const { Category } = require("../../models/categories/category");
-const { SubCategory } = require("../../models/categories/subCategory");
+const { Product } = require("../../../models/product");
+const { Category } = require("../../../models/categories/category");
+const { SubCategory } = require("../../../models/categories/subCategory");
 async function addProductMiddleware(req, res, next) {
     try {
         const category = await Category.findById(req.body.category);
