@@ -7,6 +7,6 @@ const {
   getAllFaqs,
 } = require("../controllers/seo");
 
-router.route("/faq").get(getAllFaqs).post(createFaq);
-router.route("/faq/:id").put(updateFaq).delete(deleteFaq);
+router.route("/").get(getAllFaqs).post(createFaq);
+router.route("/:id").put(updateFaq).delete(deleteFaq);
 module.exports = router;

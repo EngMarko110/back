@@ -8,8 +8,8 @@ const {
   getSinglePost,
 } = require("../controllers/seo");
 
-router.route("/blog").get(getAllBlogs).post(createBlog);
+router.route("/").get(getAllBlogs).post(createBlog);
 
-router.route("/blog/:id").get(getSinglePost).put(updateBlog).delete(deleteBlog);
+router.route("/:id").get(getSinglePost).put(updateBlog).delete(deleteBlog);
 
 module.exports = router;
