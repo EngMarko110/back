@@ -89,7 +89,7 @@ router.put("/:id", async (req, res) => {
     {
       status: req.body.status,
     },
-    { new: true }
+    { new: true, omitUndefined: true },
   );
 
   if (!order) return res.status(400).send("the order cannot be update!");

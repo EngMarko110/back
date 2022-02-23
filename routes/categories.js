@@ -2,10 +2,11 @@ const { MainCategory } = require("../models/categories/mainCategory");
 const { Category } = require("../models/categories/category");
 const { SubCategory } = require("../models/categories/subCategory");
 const { Product } = require("../models/product");
+const { Licence } = require("../models/licence");
 const express = require("express");
 const parseUrlencoded = express.urlencoded({ extended: true });
-const addCategoryMiddleware = require("../utils/middlewares/addCategoryMiddleware");
-const addSubCategoryMiddleware = require("../utils/middlewares/addSubCategoryMiddleware");
+const addCategoryMiddleware = require("../utils/middlewares/categoryMiddlewares/addCategoryMiddleware");
+const addSubCategoryMiddleware = require("../utils/middlewares/categoryMiddlewares/addSubCategoryMiddleware");
 const router = express.Router();
 router.get(`/mainCategories`, async (req, res) => {
   try {
@@ -48,12 +49,17 @@ router.put("/mainCategories/edit/:id", async (req, res) => {
 router.delete("/mainCategories/:id", (req, res) => {
   MainCategory.findByIdAndRemove(req.params.id).then((mainCategory) => {
     if (mainCategory) {
-      Category.deleteMany({ mainCategory: req.params.id }).then((category) => {
-        if (category) {
-          SubCategory.deleteMany({ mainCategory: req.params.id }).then((subCategory) => {
-            if (subCategory) {
-              Product.deleteMany({ mainCategory: req.params.id }).then((product) => {
-                if (product) return res.status(200).json({ success: true, message: "the main category is deleted!" });
+      Category.deleteMany({ mainCategory: req.params.id }).then((categories) => {
+        if (categories) {
+          SubCategory.deleteMany({ mainCategory: req.params.id }).then((subCategories) => {
+            if (subCategories) {
+              Product.deleteMany({ mainCategory: req.params.id }).then((products) => {
+                if (products) {
+                  const licensesIds = getLicensesIds();
+                  Licence.deleteMany({ id: { $in: licensesIds } }).then((licenses) => {
+                    if (licenses) return res.status(200).json({ success: true, message: "the main category is deleted!" });
+                  });
+                }
               });
             }
           });
@@ -130,10 +136,15 @@ router.delete("/:id", (req, res) => {
   Category.findByIdAndRemove(req.params.id)
     .then((category) => {
       if (category) {
-        SubCategory.deleteMany({ category: req.params.id }).then((subCategory) => {
-          if (subCategory) {
-            Product.deleteMany({ category: req.params.id }).then((product) => {
-              if (product) return res.status(200).json({ success: true, message: "the category is deleted!" });
+        SubCategory.deleteMany({ category: req.params.id }).then((subCategories) => {
+          if (subCategories) {
+            Product.deleteMany({ category: req.params.id }).then((products) => {
+              if (products) {
+                const licensesIds = getLicensesIds();
+                Licence.deleteMany({ id: { $in: licensesIds } }).then((licenses) => {
+                  if (licenses) return res.status(200).json({ success: true, message: "the category is deleted!" });
+                });
+              }
             });
           }
         });
@@ -203,8 +214,13 @@ router.delete("/subCategories/:id", (req, res) => {
   SubCategory.findByIdAndRemove(req.params.id)
     .then((subCategory) => {
       if (subCategory) {
-        Product.deleteMany({ subCategory: req.params.id }).then((product) => {
-          if (product) return res.status(200).json({ success: true, message: "the category is deleted!" });
+        Product.deleteMany({ subCategory: req.params.id }).then((products) => {
+          if (products) {
+            const licensesIds = getLicensesIds();
+            Licence.deleteMany({ id: { $in: licensesIds } }).then((licenses) => {
+              if (licenses) return res.status(200).json({ success: true, message: "the sub category is deleted!" });
+            });
+          }
         });
       }
       else
@@ -214,5 +230,16 @@ router.delete("/subCategories/:id", (req, res) => {
     })
     .catch((err) => res.status(500).json({ success: false, error: err }));
 });
+
+async function getLicensesIds() {
+  const licenses = await Licence.find();
+  const products = await Product.find();
+  const productIds = [];
+  for (const product of products) productIds.push(product.id);
+  const deletedLicenses = licenses.filter((license) => !productIds.includes(license.id));
+  const licensesIds = [];
+  for (const license of deletedLicenses) licensesIds.push(license.id);
+  return licensesIds;
+}
 
 module.exports = router;
