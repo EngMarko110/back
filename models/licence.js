@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const licenceSchema = mongoose.Schema({
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+    product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     code: { type: String, required: true },
     sold: { type: Boolean, default: false },
 });

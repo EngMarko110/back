@@ -1,14 +1,14 @@
 const { Product } = require("../models/product");
-const express = require("express");
 const { Category } = require("../models/categories/category");
 const { SubCategory } = require("../models/categories/subCategory");
 const { Licence } = require("../models/licence");
-const router = express.Router();
-const mongoose = require("mongoose");
+const addProductMiddleware = require("../utils/middlewares/productMiddlewares/addProductMiddleware");
+const updateProductsMiddleware = require("../utils/middlewares/productMiddlewares/updateProductsMiddleware");
+const express = require("express");
 const multer = require("multer");
 const parseUrlencoded = express.urlencoded({ extended: true });
-const addProductMiddleware = require("../utils/middlewares/productMiddlewares/addProductMiddleware");
-const { OrderStatus } = require("../models/enums/OrderStatus");
+const router = express.Router();
+const mongoose = require("mongoose");
 const FILE_TYPE_MAP = {
   "image/png": "png",
   "image/jpeg": "jpeg",
@@ -55,9 +55,7 @@ router.get(`/:id`, [parseUrlencoded], async (req, res) => {
   const product = await Product.findById(req.params.id)
     .populate("mainCategory")
     .populate("category")
-    .populate("subCategory")
-    .select("-availableLicence")
-    .select("-soldLicence");
+    .populate("subCategory");
 
   if (!product) {
     res.status(500).json({ success: false });
@@ -96,7 +94,7 @@ router.post(
   }
 );
 
-router.put("/:id", [parseUrlencoded, uploadOptions.single("image")], async (req, res) => {
+router.put("/:id", uploadOptions.single("image"), async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(400).send("Invalid Product Id");
   }
@@ -106,27 +104,6 @@ router.put("/:id", [parseUrlencoded, uploadOptions.single("image")], async (req,
   if (!subCategory) return res.status(400).send("Invalid Sub Category");
   let product = await Product.findById(req.params.id);
   if (!product) return res.status(400).send("Invalid Product!");
-  let licences = await Licence.find().where({ productId: req.params.id });
-  const filteredLicencesWithProduct = licences.filter((licence) => product.availableLicence.includes(licence.id));
-  if (filteredLicencesWithProduct.length !== licences.length) return res.status(500).send("There is something wrong in product data!");
-  if (req.body.soldKeys && req.body.orderStatus === OrderStatus.COMPLETE) {
-    const existedSoldKeys = req.body.soldKeys.filter((key) => product.soldLicence.includes(key));
-    if (!existedSoldKeys.length) {
-      const invalidSoldKeys = req.body.soldKeys.filter((key) => !product.availableLicence.includes(key));
-      if (invalidSoldKeys.length) return res.status(400).json({ message: "Product isn't available to be sold" });
-      else {
-        const updatedLicences = await Licence.updateMany({ _id: { $in: req.body.soldKeys } }, { sold: true }, { new: true, omitUndefined: true });
-        if (!updatedLicences) return res.status(500).json({ message: "Licence can't be updated" });
-        req.body.soldKeys.forEach((soldKey) => {
-          if (product.availableLicence.includes(soldKey)) {
-            product.availableLicence[product.availableLicence.indexOf(soldKey)] = null;
-            product.soldLicence.push(soldKey);
-          }
-        });
-        product.availableLicence = product.availableLicence.filter((key) => key !== null);
-      }
-    }
-  }
   const file = req.file;
   let imagepath;
 
@@ -150,9 +127,9 @@ router.put("/:id", [parseUrlencoded, uploadOptions.single("image")], async (req,
       category: req.body.category,
       subCategory: req.body.subCategory,
       countInStock: req.body.countInStock,
-      availableLicence: product.availableLicence,
-      soldLicence: product.soldLicence,
-      licenceStock: product.availableLicence.length,
+      availableLicence: req.body.availableLicence,
+      soldLicence: req.body.soldLicence,
+      licenceStock: req.body.availableLicence.length,
       isFeatured: req.body.isFeatured,
     },
     { new: true, omitUndefined: true }
@@ -160,6 +137,41 @@ router.put("/:id", [parseUrlencoded, uploadOptions.single("image")], async (req,
   if (!updatedProduct)
     return res.status(500).send("the product cannot be updated!");
   res.send(updatedProduct);
+});
+
+router.put("/many/order", [parseUrlencoded, updateProductsMiddleware], async (req, res) => {
+  try {
+    let products = res.locals.products;
+    const licenses = await Licence.find();
+    if (req.body.soldKeys && req.body.orderStatus === "3") {
+      const soldKeys = req.body.soldKeys;
+      for (let product of products) {
+        const existedSoldKeys = soldKeys.filter((key) => product.soldLicence.includes(key));
+        if (!existedSoldKeys.length) {
+          const licensesIds = [];
+          const licensesOfProduct = licenses.filter((licence) => licence.product === product.id);
+          for (const license of licensesOfProduct) licensesIds.push(license.id);
+          const invalidSoldKeys = soldKeys.filter((key) => !product.availableLicence.includes(key) && licensesIds.includes(key));
+          if (invalidSoldKeys.length) return res.status(400).json({ message: "Product isn't available to be sold" });
+          else {
+            soldKeys.forEach((soldKey) => {
+              if (product.availableLicence.includes(soldKey)) {
+                product.availableLicence[product.availableLicence.indexOf(soldKey)] = null;
+                product.soldLicence.push(soldKey);
+              }
+            });
+            product.availableLicence = product.availableLicence.filter((key) => key !== null);
+            product.licenceStock = product.availableLicence.length;
+          }
+        }
+        await Product.findByIdAndUpdate(product.id, product, { new: true, omitUndefined: true });
+      }
+      return res.status(200).json({ success: true, message: "the products are updated!" });
+    }
+  } catch (error) {
+    console.log(error)
+    return res.status(500).send("the products cannot be updated!");
+  }
 });
 
 router.delete("/:id", [parseUrlencoded], (req, res) => {
