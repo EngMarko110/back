@@ -5,8 +5,10 @@ const {
   updateFaq,
   deleteFaq,
   getAllFaqs,
+  getSingleFaq,
 } = require("../controllers/seo");
 
 router.route("/").get(getAllFaqs).post(createFaq);
-router.route("/:id").put(updateFaq).delete(deleteFaq);
+router.route("/:id").get(getSingleFaq).put(updateFaq).delete(deleteFaq);
+
 module.exports = router;

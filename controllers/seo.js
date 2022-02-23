@@ -77,6 +77,11 @@ const deleteFaq = async (req, res) => {
     res.status(400).json(error);
   }
 };
+const getSingleFaq = async (req, res) => {
+  const id = req.params.id;
+  const faq = await Faq.findById(id);
+  res.status(200).json(faq);
+};
 module.exports = {
   createBlog,
   createFaq,
@@ -87,4 +92,5 @@ module.exports = {
   getAllBlogs,
   getAllFaqs,
   getSinglePost,
+  getSingleFaq,
 };
