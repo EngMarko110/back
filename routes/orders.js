@@ -1,6 +1,8 @@
 const { Order } = require("../models/order");
 const express = require("express");
+const parseUrlencoded = express.urlencoded({ extended: true });
 const { OrderItem } = require("../models/order-item");
+const updateOrderMiddleware = require("../utils/middlewares/orderMiddlewares/updateOrderMiddleware");
 const router = express.Router();
 
 router.get(`/`, async (req, res) => {
@@ -83,7 +85,7 @@ router.post("/", async (req, res) => {
   res.status(200).send(order);
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", [parseUrlencoded, updateOrderMiddleware], async (req, res) => {
   const order = await Order.findByIdAndUpdate(
     req.params.id,
     {
